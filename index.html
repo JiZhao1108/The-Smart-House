@@ -1,0 +1,295 @@
+<!-- 
+ESD Final Project
+Creator: Raza Qazi and Ji Zhao
+Date: 25 April 2017
+Description: This file can plot data from 'moisture.csv' and 'temperature.csv'. Drag this file to browser, user can get plot directly.
+-->
+
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta http-equiv="refresh" content="600" />
+
+<head>
+<!-- set title -->
+<title>ESDS17 - Smart House</title>
+</head>
+<!-- text on website -->
+<h2>ESDS17 Final Project</h2>
+<h2>Smart House</h2>
+<h3>Raza Qazi, Ji Zhao</h3>
+<!-- Read data from file moisture.csv -->
+<h3>Look at <a href="moisture.csv">Raw</a> time and moisture sensor data.</h3> 
+
+<style>
+
+body {
+/* set font */
+font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {  /* set axis line type */
+	fill: none;		
+	stroke: black;
+	shape-rendering: crispEdges;
+}
+/* no line in x axis */
+.x.axis path {
+	display: none;
+}
+
+.line {		/* set data line type */
+	fill: none;
+	stroke: steelblue;
+	stroke-width: 2.0px;
+}
+
+</style>
+
+<body>
+<!-- d3.js source -->
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script>
+/********* Moisture data *********/
+
+//set axis
+var margin = {top: 20, right: 80, bottom: 30, left: 50},
+	width = 960 - margin.left - margin.right,
+	height = 500 - margin.top - margin.bottom;
+//time format
+//%d: zero-padded day of the month [01,31]； 
+//%b: abbreviated month name；
+//%y: year without century as a decimal number 
+var parseDate = d3.time.format("%d-%b-%y").parse;
+
+/* set x,y axis range */
+var x = d3.time.scale()
+	.range([0, width]);
+
+var y = d3.scale.linear()
+	.range([height, 0]);
+/* set categorical colors */
+var color = d3.scale.category10();
+/* orientation of x,y axis */
+var xAxis = d3.svg.axis()
+	.scale(x)
+	.orient("bottom");
+
+var yAxis = d3.svg.axis()
+	.scale(y)
+	.orient("left");
+/* a B-spline, with control point duplication on the ends. */ 
+var line = d3.svg.line().interpolate("basis")
+	.x(function(d) { return x(d.date); })
+	.y(function(d) { return y(d.moisture); });
+
+/* find <body> and add an SVG element */ 
+var svg = d3.select("body").append("svg")
+	.attr("width", width + margin.left + margin.right)
+	.attr("height", height + margin.top + margin.bottom)
+  .append("g")
+	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+//get data
+d3.csv("moisture.csv", function(error, data) {
+/* when error happens, output error */
+if (error) throw error;
+
+color.domain(d3.keys(data[0]).filter(function(key) { return key !== "date"; }));
+/* ensure all values are pulled out from file are set and formatted correctly */
+	data.forEach(function(d) {
+		d.date = parseDate(d.date);
+});
+/* .map([object][, key]) */
+var tables = color.domain().map(function(name) {
+
+return {
+name: name,
+values: data.map(function(d) {
+return {date: d.date, moisture: +d[name]};
+})};});
+
+x.domain(d3.extent(data, function(d) { return d.date; }));
+/* y axis range[-10, 110] */
+y.domain([
+d3.min(tables, function(c) { return d3.min(c.values, function(v) { return -10; }); }), 
+d3.max(tables, function(c) { return d3.max(c.values, function(v) { return 110; }); })
+]);
+
+/* x, y axis label */
+svg.append("g")
+	.attr("class", "x axis")
+	.attr("transform", "translate(0," + height + ")")
+	.call(xAxis)
+ svg.append("text")
+	.attr("transform", "translate(" + (width) + "," + (height + margin.bottom) + ")")
+	.style("text-anchor", "end")
+	.text("Time");
+
+svg.append("g")
+	.attr("class", "y axis")
+	.call(yAxis)
+  .append("text")
+	.attr("transform", "rotate(-90)")
+	.attr("y", 6)
+	.attr("dy", ".71em")
+	.style("text-anchor", "end")
+	.text("moisture");
+
+
+/* plot data and show name of data and edge */
+var table = svg.selectAll(".table")
+.data(tables)
+.enter().append("g")
+.attr("class", "table");
+
+/* plot data */
+table.append("path")
+.attr("class", "line")
+.attr("d", function(d) { return line(d.values); })
+.style("stroke", function(d) { return color(d.name); });
+
+/* show name of data at end of plot line */
+table.append("text")
+.datum(function(d) { return {name: d.name, value: d.values[d.values.length - 1]}; })
+
+.attr("transform", function(d) { return "translate(" + x(d.value.date) + "," + y(d.value.moisture) + ")"; })
+.attr("x", 3)
+.attr("dy", ".35em")
+.text(function(d) { return d.name; });
+});
+
+
+/* Below is the code for show temperature data on website, use the same code as above. */
+</script>
+</body>
+<!-- Read data from file temperature.csv -->
+<h3>Look at <a href="temperature.csv">Raw</a> time and temperature sensor data.</h3>
+<!-- Read data from file consume.csv -->
+<h3>Look at <a href="consume.csv">monthly consumption</a> .</h3>
+<body>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script>
+/********* Temperature data *********/
+
+var margin = {top: 20, right: 80, bottom: 30, left: 50},
+	width = 960 - margin.left - margin.right,
+	height = 500 - margin.top - margin.bottom;
+
+var parseDate = d3.time.format("%d-%b-%y").parse; 
+var x = d3.time.scale()
+	.range([0, width]);
+
+var y = d3.scale.linear()
+	.range([height, 0]);
+
+var color = d3.scale.category10();
+
+var xAxis = d3.svg.axis()
+	.scale(x)
+	.orient("bottom");
+
+var yAxis = d3.svg.axis()
+	.scale(y)
+	.orient("left");
+
+var line = d3.svg.line().interpolate("basis")
+	.x(function(d) { return x(d.date); })
+	.y(function(d) { return y(d.temperature); });
+
+
+
+var svg = d3.select("body").append("svg")
+	.attr("width", width + margin.left + margin.right)
+	.attr("height", height + margin.top + margin.bottom)
+  .append("g")
+	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+//get data
+d3.csv("temperature.csv", function(error, data) {
+
+if (error) throw error;
+
+color.domain(d3.keys(data[0]).filter(function(key) { return key !== "date"; }));
+
+	data.forEach(function(d) {
+		d.date = parseDate(d.date);
+});
+
+var tables = color.domain().map(function(name) {
+
+return {
+
+name: name,
+values: data.map(function(d) {
+return {date: d.date, temperature: +d[name]};
+
+})
+};
+});
+
+x.domain(d3.extent(data, function(d) { return d.date; }));
+y.domain([
+d3.min(tables, function(c) { return d3.min(c.values, function(v) { return 0; }); }),
+d3.max(tables, function(c) { return d3.max(c.values, function(v) { return 50; }); })
+]);
+
+
+svg.append("g")
+	.attr("class", "x axis")
+	.attr("transform", "translate(0," + height + ")")
+	.call(xAxis)
+ svg.append("text")
+	.attr("transform", "translate(" + (width) + "," + (height + margin.bottom) + ")")
+	.style("text-anchor", "end")
+	.text("Time");
+
+svg.append("g")
+	.attr("class", "y axis")
+	.call(yAxis)
+  .append("text")
+	.attr("transform", "rotate(-90)")
+	.attr("y", 6)
+	.attr("dy", ".71em")
+	.style("text-anchor", "end")
+	.text("temperature [°C]");
+
+
+
+var table = svg.selectAll(".table")
+
+.data(tables)
+
+.enter().append("g")
+
+.attr("class", "table");
+
+
+
+table.append("path")
+
+.attr("class", "line")
+
+.attr("d", function(d) { return line(d.values); })
+
+.style("stroke", function(d) { return color(d.name); });
+
+
+
+table.append("text")
+
+.datum(function(d) { return {name: d.name, value: d.values[d.values.length - 1]}; })
+
+.attr("transform", function(d) { return "translate(" + x(d.value.date) + "," + y(d.value.temperature) + ")"; })
+
+.attr("x", 3)
+
+.attr("dy", ".35em")
+
+.text(function(d) { return d.name; });
+
+});
+
+</script>
+</body>
+
